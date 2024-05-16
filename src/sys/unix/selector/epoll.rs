@@ -116,7 +116,7 @@ impl Selector {
     pub fn register(&self, fd: RawFd, token: Token, interests: Interest) -> io::Result<()> {
         let mut event = libc::epoll_event {
             events: interests_to_epoll(interests),
-            u64: usize::from(token) as u64,
+            u64: (usize::from(token) as *const u8).into(),
             #[cfg(target_os = "redox")]
             _pad: 0,
         };
@@ -127,7 +127,7 @@ impl Selector {
     pub fn reregister(&self, fd: RawFd, token: Token, interests: Interest) -> io::Result<()> {
         let mut event = libc::epoll_event {
             events: interests_to_epoll(interests),
-            u64: usize::from(token) as u64,
+            u64: (usize::from(token) as *const u8).into(),
             #[cfg(target_os = "redox")]
             _pad: 0,
         };
@@ -196,7 +196,8 @@ pub mod event {
     use crate::Token;
 
     pub fn token(event: &Event) -> Token {
-        Token(event.u64 as usize)
+        let ptr: *const u8 = event.u64.into();
+        Token(ptr as usize)
     }
 
     pub fn is_readable(event: &Event) -> bool {
